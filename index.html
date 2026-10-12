@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wandfarben – Das Ziegelwand-Spiel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game">
+    <header class="hud">
+      <div class="stat">
+        <span class="label">Punkte</span>
+        <span id="score">0</span>
+      </div>
+      <div class="stat">
+        <span class="label">Blaue Ziegel</span>
+        <span id="blue-count">0</span>
+      </div>
+      <div class="stat">
+        <span class="label">Tempo</span>
+        <span id="level">1.0x</span>
+      </div>
+    </header>
+
+    <div id="wall" class="wall" aria-label="Ziegelwand"></div>
+  </div>
+
+  <div id="overlay" class="overlay">
+    <div class="panel">
+      <h1 id="overlay-title">Wandfarben</h1>
+      <p id="overlay-text">
+        Tippe die blauen Ziegel mit der <strong>linken Maustaste</strong> an,<br>
+        um sie rot zu machen. Aber Achtung:<br>
+        Es werden immer mehr – und immer schneller!
+      </p>
+      <button id="start-btn">Start</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

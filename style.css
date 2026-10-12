@@ -297,3 +297,53 @@ button:disabled {
   color: #94a3b8;
   padding: 20px 0;
 }
+
+/* ---------- Bestenliste ---------- */
+.highscores {
+  margin: 4px 0 22px;
+  text-align: left;
+}
+
+.highscores h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.highscores table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.highscores th,
+.highscores td {
+  padding: 6px 10px;
+  text-align: center;
+}
+
+.highscores th {
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.highscores td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.highscores tr.current td {
+  background: rgba(96, 165, 250, 0.18);
+  color: #fff;
+  font-weight: 700;
+}
+
+.hs-empty {
+  color: #94a3b8;
+  text-align: center;
+  padding: 8px 0;
+}

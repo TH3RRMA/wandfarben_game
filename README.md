@@ -18,9 +18,11 @@ https://TH3RRMA.github.io/wandfarben_game/
 
 - Ziegel beginnen blau und werden durch Antippen rot.
 - Nach und nach werden zufällige rote Ziegel wieder blau – das Tempo steigt dabei stetig an.
-- Punkte gibt es für jeden angeklickten blauen Ziegel.
+- Das Spiel ist in **Phasen** unterteilt (je 30 Sekunden). Danach gibt es eine Pause.
+- In den Pausen kaufst du **Upgrades** (z. B. größerer Einfärbe-Radius) mit deinen Punkten.
+- **Fehlklicks** auf rote Ziegel verschlechtern die angebotenen Upgrades.
 - Das Spiel endet, sobald alle Ziegel gleichzeitig blau sind.
-- Der Rekord wird lokal im Browser gespeichert.
+- Eine lokale **Top-10-Bestenliste** wird im Browser gespeichert.
 
 ## Dateien
 

@@ -68,6 +68,7 @@ const shopPhaseEl = document.getElementById("shop-phase");
 const shopSubtitleEl = document.getElementById("shop-subtitle");
 const shopCardsEl = document.getElementById("shop-cards");
 const nextBtn = document.getElementById("next-btn");
+const highscoresEl = document.getElementById("highscores");
 
 // ---------- Zustand ----------
 let bricks = []; // { el, state, row, col }
@@ -83,7 +84,8 @@ let phaseEnd = 0;
 let spawnTimer = null;
 let timerId = null;
 
-let highScore = Number(localStorage.getItem("wandfarben_highscore") || 0);
+const HS_KEY = "wandfarben_highscores";
+let lastScoreId = null;
 
 // ---------- Sound ----------
 let audioCtx = null;
@@ -170,6 +172,74 @@ function shopTier() {
 
 function priceMultiplier() {
   return 1 + effectiveMisses() * 0.1;
+}
+
+// ---------- Bestenliste (lokal) ----------
+function loadScores() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(HS_KEY));
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveScores(scores) {
+  localStorage.setItem(HS_KEY, JSON.stringify(scores));
+}
+
+function topScore() {
+  const scores = loadScores();
+  return scores.length ? scores[0].score : 0;
+}
+
+function addScore(score, phaseReached) {
+  const scores = loadScores();
+  const entry = {
+    id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+    score: score,
+    phase: phaseReached,
+    date: new Date().toLocaleDateString("de-DE"),
+  };
+  lastScoreId = entry.id;
+  scores.push(entry);
+  scores.sort((a, b) => b.score - a.score);
+  saveScores(scores.slice(0, 10));
+  renderLeaderboard(lastScoreId);
+}
+
+function renderLeaderboard(highlightId) {
+  const scores = loadScores();
+  highscoresEl.innerHTML = "";
+  if (scores.length === 0) {
+    const p = document.createElement("p");
+    p.className = "hs-empty";
+    p.textContent = "Noch keine Einträge.";
+    highscoresEl.appendChild(p);
+    return;
+  }
+  const table = document.createElement("table");
+  let html =
+    "<thead><tr><th>#</th><th>Punkte</th><th>Phase</th><th>Datum</th></tr></thead><tbody>";
+  scores.forEach((s, i) => {
+    const cls = s.id === highlightId ? ' class="current"' : "";
+    html +=
+      "<tr" + cls + "><td>" + (i + 1) + "</td><td>" + s.score +
+      "</td><td>" + s.phase + "</td><td>" + s.date + "</td></tr>";
+  });
+  html += "</tbody>";
+  table.innerHTML = html;
+  highscoresEl.appendChild(table);
+}
+
+function migrateLegacy() {
+  if (loadScores().length === 0) {
+    const old = Number(localStorage.getItem("wandfarben_highscore") || 0);
+    if (old > 0) {
+      saveScores([{ id: "legacy", score: old, phase: 1, date: "—" }]);
+    }
+  }
+  localStorage.removeItem("wandfarben_highscore");
 }
 
 // ---------- Aufbau ----------
@@ -412,15 +482,11 @@ function gameOver() {
   running = false;
   clearInterval(timerId);
   clearTimeout(spawnTimer);
-  if (earnedTotal > highScore) {
-    highScore = earnedTotal;
-    localStorage.setItem("wandfarben_highscore", String(highScore));
-  }
+  addScore(earnedTotal, phase);
   menuTitle.textContent = "Spiel vorbei!";
   menuText.innerHTML =
     "Erreichte Phase: <strong>" + phase + "</strong><br>" +
-    "Gesamtpunkte: <strong>" + earnedTotal + "</strong><br>" +
-    "Rekord: <strong>" + highScore + "</strong>";
+    "Gesamtpunkte: <strong>" + earnedTotal + "</strong>";
   menuBtn.textContent = "Nochmal";
   menuOverlay.classList.remove("hidden");
 }
@@ -439,13 +505,15 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+migrateLegacy();
+renderLeaderboard(null);
+
 menuTitle.textContent = "Wandfarben";
 menuText.innerHTML =
   "Tippe die <strong>blauen</strong> Ziegel mit der <strong>linken Maustaste</strong> an,<br>" +
   "um sie rot zu machen. Jede Phase dauert " + PHASE_DURATION + " Sekunden.<br><br>" +
   "In den Pausen kaufst du Upgrades.<br>" +
-  "Achtung: Klicks auf rote Ziegel sind Fehler und verschlechtern die Upgrades!<br><br>" +
-  "Rekord: <strong>" + highScore + "</strong>";
+  "Achtung: Klicks auf rote Ziegel sind Fehler und verschlechtern die Upgrades!";
 menuBtn.textContent = "Start";
 menuOverlay.classList.remove("hidden");
 

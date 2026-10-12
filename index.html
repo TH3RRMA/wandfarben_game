@@ -14,27 +14,44 @@
         <span id="score">0</span>
       </div>
       <div class="stat">
-        <span class="label">Blaue Ziegel</span>
-        <span id="blue-count">0</span>
+        <span class="label">Phase</span>
+        <span id="phase">1</span>
+      </div>
+      <div class="stat">
+        <span class="label">Zeit</span>
+        <span id="time">30s</span>
       </div>
       <div class="stat">
         <span class="label">Tempo</span>
-        <span id="level">1.0x</span>
+        <span id="tempo">1.6s</span>
+      </div>
+      <div class="stat">
+        <span class="label">Fehler</span>
+        <span id="misses">0</span>
       </div>
     </header>
+
+    <div class="progress">
+      <div id="progress-fill"></div>
+    </div>
 
     <div id="wall" class="wall" aria-label="Ziegelwand"></div>
   </div>
 
-  <div id="overlay" class="overlay">
+  <div id="menu" class="overlay">
     <div class="panel">
-      <h1 id="overlay-title">Wandfarben</h1>
-      <p id="overlay-text">
-        Tippe die blauen Ziegel mit der <strong>linken Maustaste</strong> an,<br>
-        um sie rot zu machen. Aber Achtung:<br>
-        Es werden immer mehr – und immer schneller!
-      </p>
-      <button id="start-btn">Start</button>
+      <h1 id="menu-title">Wandfarben</h1>
+      <p id="menu-text"></p>
+      <button id="menu-btn">Start</button>
+    </div>
+  </div>
+
+  <div id="shop" class="overlay hidden">
+    <div class="panel shop-panel">
+      <h1>Phase <span id="shop-phase">1</span> geschafft!</h1>
+      <p id="shop-subtitle"></p>
+      <div id="shop-cards" class="shop-cards"></div>
+      <button id="next-btn">Nächste Phase</button>
     </div>
   </div>
 

@@ -12,6 +12,8 @@ const MIN_INTERVAL = 300;
 const START_BLUE_BASE = 6;      // blaue Ziegel in Phase 1
 const START_BLUE_STEP = 3;      // +3 blaue Ziegel pro Phase
 const DANGER_RATIO = 0.75;      // ab diesem Blau-Anteil pulsiert die Wand
+const COMBO_WINDOW = 1500;      // ms für Combo-Fortsetzung
+const MAX_COMBO = 20;           // maximale Combo-Stufe
 
 // ---------- Upgrades ----------
 const UPGRADES = {
@@ -47,6 +49,30 @@ const UPGRADES = {
     baseCost: 30,
     effect: (n) => "-" + n * 3 + " Fehler Strafe",
   },
+  time: {
+    name: "Extra-Zeit",
+    icon: "⏱️",
+    desc: "Verlängert die Dauer jeder Phase.",
+    max: 3,
+    baseCost: 25,
+    effect: (n) => "+" + n * 5 + "s pro Phase",
+  },
+  auto: {
+    name: "Auto-Klick",
+    icon: "🤖",
+    desc: "Färbt automatisch blaue Ziegel ein.",
+    max: 3,
+    baseCost: 40,
+    effect: (n) => "alle " + Math.max(2, 6 - (n - 1) * 2) + "s ein Ziegel",
+  },
+  combo: {
+    name: "Combo-Boost",
+    icon: "🎯",
+    desc: "Schnelle Treffer in Folge geben mehr Punkte.",
+    max: 5,
+    baseCost: 25,
+    effect: (n) => "+" + n * 10 + "% pro Combo-Stufe",
+  },
 };
 
 // ---------- DOM ----------
@@ -57,6 +83,7 @@ const timeEl = document.getElementById("time");
 const tempoEl = document.getElementById("tempo");
 const missEl = document.getElementById("misses");
 const progressFill = document.getElementById("progress-fill");
+const comboEl = document.getElementById("combo");
 
 const menuOverlay = document.getElementById("menu");
 const menuTitle = document.getElementById("menu-title");
@@ -72,7 +99,7 @@ const highscoresEl = document.getElementById("highscores");
 
 // ---------- Zustand ----------
 let bricks = []; // { el, state, row, col }
-let levels = { radius: 0, tempo: 0, points: 0, tolerance: 0 };
+let levels = freshLevels();
 
 let points = 0;       // ausgabbare Punkte (Währung)
 let earnedTotal = 0;  // gesamt erspielte Punkte (für Rekord)
@@ -83,6 +110,9 @@ let running = false;
 let phaseEnd = 0;
 let spawnTimer = null;
 let timerId = null;
+let autoTimer = null;
+let combo = 0;
+let lastTapTime = 0;
 
 const HS_KEY = "wandfarben_highscores";
 let lastScoreId = null;
@@ -151,6 +181,20 @@ function shuffle(arr) {
 
 function reach() {
   return levels.radius;
+}
+
+function freshLevels() {
+  const obj = {};
+  for (const k of Object.keys(UPGRADES)) obj[k] = 0;
+  return obj;
+}
+
+function phaseDurationMs() {
+  return (PHASE_DURATION + levels.time * 5) * 1000;
+}
+
+function comboMultiplier() {
+  return 1 + combo * 0.1 * levels.combo;
 }
 
 function currentInterval() {
@@ -270,7 +314,7 @@ function startRun() {
   earnedTotal = 0;
   misses = 0;
   phase = 0;
-  levels = { radius: 0, tempo: 0, points: 0, tolerance: 0 };
+  levels = freshLevels();
   menuOverlay.classList.add("hidden");
   shopOverlay.classList.add("hidden");
   startPhase();
@@ -297,12 +341,15 @@ function startPhase() {
   }
   blueCount = n;
 
+  combo = 0;
+  lastTapTime = 0;
   running = true;
-  phaseEnd = Date.now() + PHASE_DURATION * 1000;
+  phaseEnd = Date.now() + phaseDurationMs();
   wall.classList.remove("danger");
   updateHUD();
   startTimer();
   scheduleSpawn();
+  scheduleAuto();
 }
 
 function startTimer() {
@@ -311,7 +358,11 @@ function startTimer() {
     if (!running) return;
     const remaining = Math.max(0, phaseEnd - Date.now());
     timeEl.textContent = Math.ceil(remaining / 1000) + "s";
-    progressFill.style.width = (remaining / (PHASE_DURATION * 1000)) * 100 + "%";
+    progressFill.style.width = (remaining / phaseDurationMs()) * 100 + "%";
+    if (combo > 0 && Date.now() - lastTapTime > COMBO_WINDOW) {
+      combo = 0;
+      updateComboDisplay();
+    }
     if (remaining <= 0) endPhase();
   }, 100);
 }
@@ -338,6 +389,33 @@ function spawnBlue() {
   bricks[i].state = "blue";
   bricks[i].el.className = "brick blue";
   blueCount++;
+  updateHUD();
+}
+
+function scheduleAuto() {
+  clearTimeout(autoTimer);
+  if (levels.auto <= 0) return;
+  const interval = Math.max(2000, 6000 - (levels.auto - 1) * 2000);
+  autoTimer = setTimeout(() => {
+    if (!running) return;
+    autoClear();
+    scheduleAuto();
+  }, interval);
+}
+
+function autoClear() {
+  const blue = [];
+  for (let i = 0; i < TOTAL; i++) {
+    if (bricks[i].state === "blue") blue.push(i);
+  }
+  if (blue.length === 0) return;
+  const i = blue[Math.floor(Math.random() * blue.length)];
+  bricks[i].state = "red";
+  bricks[i].el.className = "brick red";
+  blueCount--;
+  const gained = pointsPerBrick();
+  points += gained;
+  earnedTotal += gained;
   updateHUD();
 }
 
@@ -369,7 +447,15 @@ function colorArea(center) {
   }
 
   if (colored > 0) {
-    const gained = colored * pointsPerBrick();
+    const now = Date.now();
+    if (now - lastTapTime <= COMBO_WINDOW) {
+      combo = Math.min(combo + 1, MAX_COMBO);
+    } else {
+      combo = 0;
+    }
+    lastTapTime = now;
+
+    const gained = Math.round(colored * pointsPerBrick() * comboMultiplier());
     points += gained;
     earnedTotal += gained;
     blueCount -= colored;
@@ -390,6 +476,16 @@ function updateHUD() {
   tempoEl.textContent = (currentInterval() / 1000).toFixed(1) + "s";
   missEl.textContent = misses;
   wall.classList.toggle("danger", blueCount / TOTAL > DANGER_RATIO);
+  updateComboDisplay();
+}
+
+function updateComboDisplay() {
+  if (combo > 0 && levels.combo > 0) {
+    comboEl.textContent = "Combo ×" + combo + "  ·  " + comboMultiplier().toFixed(1) + "×";
+    comboEl.classList.add("visible");
+  } else {
+    comboEl.classList.remove("visible");
+  }
 }
 
 // ---------- Phasenende & Shop ----------
@@ -397,6 +493,7 @@ function endPhase() {
   running = false;
   clearInterval(timerId);
   clearTimeout(spawnTimer);
+  clearTimeout(autoTimer);
   openShop();
 }
 
@@ -482,6 +579,7 @@ function gameOver() {
   running = false;
   clearInterval(timerId);
   clearTimeout(spawnTimer);
+  clearTimeout(autoTimer);
   addScore(earnedTotal, phase);
   menuTitle.textContent = "Spiel vorbei!";
   menuText.innerHTML =

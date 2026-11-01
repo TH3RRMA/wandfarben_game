@@ -1,16 +1,16 @@
 "use strict";
 
 // ---------- Konfiguration ----------
-const COLS = 10;
-const ROWS = 6;
+const COLS = 12;
+const ROWS = 8;
 const TOTAL = COLS * ROWS;
 
 const PHASE_DURATION = 30;      // Sekunden pro Phase
-const BASE_INTERVAL = 1600;     // Spawn-Intervall in Phase 1 (ms)
-const INTERVAL_STEP = 130;      // pro Phase schnellere Spawns
-const MIN_INTERVAL = 300;
-const START_BLUE_BASE = 6;      // blaue Ziegel in Phase 1
-const START_BLUE_STEP = 3;      // +3 blaue Ziegel pro Phase
+const BASE_INTERVAL = 1500;     // Spawn-Intervall in Phase 1 (ms)
+const INTERVAL_STEP = 150;      // pro Phase schnellere Spawns
+const MIN_INTERVAL = 200;
+const START_BLUE_BASE = 8;      // blaue Ziegel in Phase 1
+const START_BLUE_STEP = 4;      // +4 blaue Ziegel pro Phase
 const DANGER_RATIO = 0.75;      // ab diesem Blau-Anteil pulsiert die Wand
 const COMBO_WINDOW = 1500;      // ms für Combo-Fortsetzung
 const MAX_COMBO = 20;           // maximale Combo-Stufe
@@ -294,10 +294,7 @@ function buildWall() {
   for (let i = 0; i < TOTAL; i++) {
     const el = document.createElement("div");
     el.className = "brick blue";
-    el.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0) return; // nur linke Maustaste
-      onBrickTap(i);
-    });
+    el.dataset.index = i;
     wall.appendChild(el);
     bricks.push({
       el,
@@ -343,6 +340,7 @@ function startPhase() {
 
   combo = 0;
   lastTapTime = 0;
+  misses = 0;
   running = true;
   phaseEnd = Date.now() + phaseDurationMs();
   wall.classList.remove("danger");
@@ -419,17 +417,37 @@ function autoClear() {
   updateHUD();
 }
 
-function onBrickTap(i) {
+function handleWallPointer(e) {
+  if (e.button !== 0) return; // nur linke Maustaste
   if (!running) return;
+  const brickEl = e.target.closest(".brick");
+  if (brickEl) {
+    onBrickTap(Number(brickEl.dataset.index));
+  } else {
+    registerMiss();
+    flashWallMiss();
+  }
+}
+
+function onBrickTap(i) {
   const b = bricks[i];
   if (b.state === "blue") {
     colorArea(i);
   } else {
-    misses++;
-    playBuzz();
+    registerMiss();
     flashMiss(i);
-    updateHUD();
   }
+}
+
+function registerMiss() {
+  misses++;
+  playBuzz();
+  updateHUD();
+}
+
+function flashWallMiss() {
+  wall.classList.add("wall-miss");
+  setTimeout(() => wall.classList.remove("wall-miss"), 200);
 }
 
 function colorArea(center) {
@@ -611,8 +629,9 @@ menuText.innerHTML =
   "Tippe die <strong>blauen</strong> Ziegel mit der <strong>linken Maustaste</strong> an,<br>" +
   "um sie rot zu machen. Jede Phase dauert " + PHASE_DURATION + " Sekunden.<br><br>" +
   "In den Pausen kaufst du Upgrades.<br>" +
-  "Achtung: Klicks auf rote Ziegel sind Fehler und verschlechtern die Upgrades!";
+  "Achtung: Jeder Fehlklick (rote Ziegel oder Fugen) verschlechtert die Upgrades!";
 menuBtn.textContent = "Start";
 menuOverlay.classList.remove("hidden");
 
 buildWall();
+wall.addEventListener("pointerdown", handleWallPointer);

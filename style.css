@@ -33,7 +33,7 @@ body {
 }
 
 .game {
-  width: min(92vw, 720px);
+  width: min(92vw, 820px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -93,7 +93,7 @@ body {
   border-radius: 14px;
   padding: 10px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
@@ -156,6 +156,11 @@ body {
 
 .wall.danger {
   animation: pulse 0.6s ease-in-out infinite;
+}
+
+.wall.wall-miss {
+  outline: 3px solid rgba(239, 68, 68, 0.8);
+  outline-offset: 2px;
 }
 
 @keyframes pulse {
@@ -372,4 +377,25 @@ button:disabled {
   color: #94a3b8;
   text-align: center;
   padding: 8px 0;
+}
+
+/* ---------- Responsive (kleine Bildschirme) ---------- */
+@media (max-width: 480px) {
+  .game {
+    width: 96vw;
+    gap: 8px;
+  }
+
+  .wall {
+    gap: 3px;
+    padding: 6px;
+  }
+
+  .brick {
+    border-radius: 2px;
+  }
+
+  .stat span:last-child {
+    font-size: 17px;
+  }
 }
